@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>مساعدي الذكي</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Tajawal:wght@400;500&display=swap" rel="stylesheet">
+<style>
+    :root{
+        --bg: #eef1f6;
+        --surface: #ffffff;
+        --ink: #1c2430;
+        --muted: #6b7685;
+        --accent: #2f6feb;
+        --accent-dark: #2154b8;
+        --bubble-user: #2f6feb;
+        --bubble-bot: #f1f3f8;
+        --border: #e2e6ee;
+        --danger: #e0483e;
+        --radius: 18px;
+    }
+    *{ box-sizing: border-box; }
+    body{
+        font-family: 'Tajawal', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(180deg, #eef1f6 0%, #e4e9f2 100%);
+        margin: 0;
+        min-height: 100vh;
+        padding: 24px 16px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+    .app-title{
+        font-family: 'Cairo', sans-serif;
+        font-weight: 800;
+        font-size: 22px;
+        color: var(--ink);
+        margin-bottom: 16px;
+        letter-spacing: .3px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .app-title .dot{
+        width: 10px; height: 10px; border-radius: 50%;
+        background: var(--accent);
+        box-shadow: 0 0 0 4px rgba(47,111,235,.15);
+    }
+    .chat-container{
+        width: 100%;
+        max-width: 640px;
+        background: var(--surface);
+        border-radius: 20px;
+        box-shadow: 0 20px 45px rgba(28,36,48,.12), 0 2px 6px rgba(28,36,48,.06);
+        display: flex;
+        flex-direction: column;
+        height: 82vh;
+        overflow: hidden;
+        border: 1px solid var(--border);
+    }
+
+    /* ---- Config Bar ---- */
+    .config-box{
+        padding: 14px 16px;
+        background: #171c26;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .config-box label{
+        color: #aeb7c6;
+        font-size: 13px;
+        font-weight: 500;
+        white-space: nowrap;
+    }
+    .key-field{
+        flex: 1;
+        position: relative;
+        display: flex;
+    }
+    .key-field input{
+        width: 100%;
+        padding: 9px 12px;
+        border-radius: 10px;
+        border: 1px solid #2b3242;
+        background: #232a37;
+        color: #f1f3f8;
+        font-size: 13px;
+        outline: none;
+        transition: border-color .15s ease;
+    }
+    .key-field input:focus{ border-color: var(--accent); }
+    .key-field input::placeholder{ color: #6c7688; }
+    .save-btn{
+        background: var(--accent);
+        color: white;
+        border: none;
+        padding: 9px 16px;
+        border-radius: 10px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background .15s ease, transform .1s ease;
+        white-space: nowrap;
+    }
+    .save-btn:hover{ background: var(--accent-dark); }
+    .save-btn:active{ transform: scale(.97); }
+    .key-status{
+        font-size: 11px;
+        color: #6ee7a8;
+        margin-inline-start: 4px;
+        opacity: 0;
+        transition: opacity .2s ease;
+        white-space: nowrap;
+    }
+    .key-status.show{ opacity: 1; }
+
+    /* ---- Chat Area ---- */
+    .chat-box{
+        flex: 1;
+        padding: 22px 18px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        background:
+            radial-gradient(circle at 20% 0%, rgba(47,111,235,.04), transparent 40%),
+            var(--surface);
+    }
+    .chat-box::-webkit-scrollbar{ width: 8px; }
+    .chat-box::-webkit-scrollbar-thumb{ background: #d7dce6; border-radius: 8px; }
+
+    .row{ display: flex; width: 100%; }
+    .row.user{ justify-content: flex-start; }
+    .row.bot{ justify-content: flex-end; }
+
+    .message{
+        padding: 11px 16px;
+        border-radius: var(--radius);
+        max-width: 78%;
+        font-size: 15px;
+        line-height: 1.6;
+        box-shadow: 0 1px 2px rgba(0,0,0,.04);
+        animation: pop .18s ease;
+        white-space: pre-wrap;
+        word-break: break-word;
+    }
+    @keyframes pop{
+        from{ opacity: 0; transform: translateY(4px); }
+        to{ opacity: 1; transform: translateY(0); }
+    }
+    .user{
+        background: var(--bubble-user);
+        color: #fff;
+        border-bottom-right-radius: 6px;
+    }
+    .bot{
+        background: var(--bubble-bot);
+        color: var(--ink);
+        border-bottom-left-radius: 6px;
+    }
+    .bot.error{
+        background: #fdeceb;
+        color: var(--danger);
+        border: 1px solid #f6c9c5;
+    }
+
+    /* typing indicator */
+    .typing{
+        display: flex;
+        gap: 4px;
+        align-items: center;
+        padding: 12px 16px;
+    }
+    .typing span{
+        width: 7px; height: 7px; border-radius: 50%;
+        background: var(--muted);
+        opacity: .5;
+        animation: blink 1.2s infinite;
+    }
+    .typing span:nth-child(2){ animation-delay: .2s; }
+    .typing span:nth-child(3){ animation-delay: .4s; }
+    @keyframes blink{
+        0%, 80%, 100%{ opacity: .25; transform: scale(.85); }
+        40%{ opacity: 1; transform: scale(1); }
+    }
+
+    /* ---- Input Box ---- */
+    .input-box{
+        display: flex;
+        gap: 10px;
+        border-top: 1px solid var(--border);
+        padding: 14px 16px;
+        background: #fff;
+    }
+    .input-box input{
+        flex: 1;
+        padding: 12px 16px;
+        border: 1px solid var(--border);
+        border-radius: 24px;
+        outline: none;
+        font-size: 15px;
+        font-family: inherit;
+        transition: border-color .15s ease, box-shadow .15s ease;
+    }
+    .input-box input:focus{
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(47,111,235,.12);
+    }
+    .send-btn{
+        background: var(--accent);
+        color: white;
+        border: none;
+        min-width: 84px;
+        border-radius: 24px;
+        cursor: pointer;
+        font-size: 15px;
+        font-weight: 600;
+        transition: background .15s ease, transform .1s ease, opacity .15s ease;
+    }
+    .send-btn:hover:not(:disabled){ background: var(--accent-dark); }
+    .send-btn:active:not(:disabled){ transform: scale(.96); }
+    .send-btn:disabled{ opacity: .55; cursor: not-allowed; }
+
+    @media (max-width: 480px){
+        .config-box{ flex-wrap: wrap; }
+        .chat-container{ height: 88vh; }
+    }
+</style>
+</head>
+<body>
+
+<div class="app-title"><span class="dot"></span> مساعدي الذكي</div>
+
+<div class="chat-container">
+    <!-- صندوق إدخال المفتاح -->
+    <div class="config-box">
+        <label for="apiKeyInput">مفتاح API:</label>
+        <div class="key-field">
+            <input type="password" id="apiKeyInput" placeholder="أدخل مفتاح AIHubMix هنا..." autocomplete="off" />
+        </div>
+        <button class="save-btn" onclick="saveKey()">حفظ</button>
+        <span class="key-status" id="keyStatus">تم الحفظ ✓</span>
+    </div>
+
+    <!-- شاشة المحادثة -->
+    <div class="chat-box" id="chatBox">
+        <div class="row bot">
+            <div class="message bot">أهلاً بيك! أنا جاهز للمحادثة. تأكد إنك حطيت المفتاح فوق وضغطت حفظ الأول 👋</div>
+        </div>
+    </div>
+
+    <!-- صندوق الكتابة -->
+    <div class="input-box">
+        <input type="text" id="userInput" placeholder="اكتب رسالتك هنا..." />
+        <button class="send-btn" id="sendBtn" onclick="sendMessage()">إرسال</button>
+    </div>
+</div>
+
+<script>
+    let chatHistory = [{ role: "system", content: "أنت مساعد ذكي تتحدث باللهجة المصرية الودودة." }];
+    let isSending = false;
+
+    const chatBox = document.getElementById('chatBox');
+    const userInput = document.getElementById('userInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const apiKeyInput = document.getElementById('apiKeyInput');
+    const keyStatus = document.getElementById('keyStatus');
+
+    // استرجاع المفتاح لو محفوظ مسبقاً
+    apiKeyInput.value = localStorage.getItem('aihubmix_key') || '';
+
+    userInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') sendMessage();
+    });
+
+    function saveKey() {
+        const key = apiKeyInput.value.trim();
+        if (!key) return;
+        localStorage.setItem('aihubmix_key', key);
+        keyStatus.classList.add('show');
+        setTimeout(() => keyStatus.classList.remove('show'), 2000);
+    }
+
+    function appendMessage(text, sender, isError = false) {
+        const row = document.createElement('div');
+        row.className = `row ${sender}`;
+        const msgDiv = document.createElement('div');
+        msgDiv.className = `message ${sender}${isError ? ' error' : ''}`;
+        msgDiv.innerText = text;
+        row.appendChild(msgDiv);
+        chatBox.appendChild(row);
+        chatBox.scrollTop = chatBox.scrollHeight;
+        return row;
+    }
+
+    function showTyping() {
+        const row = document.createElement('div');
+        row.className = 'row bot';
+        row.id = 'typingRow';
+        row.innerHTML = `<div class="message bot typing"><span></span><span></span><span></span></div>`;
+        chatBox.appendChild(row);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function hideTyping() {
+        const row = document.getElementById('typingRow');
+        if (row) row.remove();
+    }
+
+    function setSending(state) {
+        isSending = state;
+        sendBtn.disabled = state;
+        sendBtn.textContent = state ? '...' : 'إرسال';
+        userInput.disabled = state;
+    }
+
+    async function sendMessage() {
+        if (isSending) return;
+        const userText = userInput.value.trim();
+        const apiKey = localStorage.getItem('aihubmix_key');
+
+        if (!userText) return;
+        if (!apiKey) {
+            appendMessage('من فضلك أدخل الـ API Key واضغط حفظ أولاً!', 'bot', true);
+            return;
+        }
+
+        appendMessage(userText, 'user');
+        userInput.value = '';
+        chatHistory.push({ role: "user", content: userText });
+
+        setSending(true);
+        showTyping();
+
+        try {
+            const response = await fetch('https://aihubmix.com/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${apiKey}`
+                },
+                body: JSON.stringify({
+                    model: "gpt-5.6-sol",
+                    messages: chatHistory,
+                    temperature: 0.7
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+
+            const data = await response.json();
+            const botReply = data?.choices?.[0]?.message?.content;
+
+            if (!botReply) throw new Error('رد غير متوقع من الخادم');
+
+            hideTyping();
+            appendMessage(botReply, 'bot');
+            chatHistory.push({ role: "assistant", content: botReply });
+
+        } catch (error) {
+            hideTyping();
+            appendMessage('عذراً، حدث خطأ في الاتصال بالـ API. تأكد من صحة المفتاح واتصالك بالإنترنت.', 'bot', true);
+            console.error(error);
+        } finally {
+            setSending(false);
+            userInput.focus();
+        }
+    }
+</script>
+
+</body>
+</html>
